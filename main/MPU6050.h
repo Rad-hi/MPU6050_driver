@@ -1,21 +1,28 @@
 /* 
- * Written by Radhi SGHAIER: https://github.com/Rad-hi
- * --------------------------------------------------------
- * Do whatever you want with the code ...
- * If this was ever useful to you, and we happened to meet on the street, 
- * I'll appreciate a cup of dark coffee, no sugar please.
- * --------------------------------------------------------
+ * -----------------------------------------------------------------------------
+ * MPU6050 Driver written from scratch referencing the datasheet, in C style.
+ * -----------------------------------------------------------------------------
  * How to use:
- * You'll need an MPU6050 Accelerometer and Gyroscope I²C module, 
- * You'll have to configure the SCL, and SDA pins in the MPU6050.h header file
- * Then follow the template provided in this file.
- * --------------------------------------------------------
+ * - You'll need an MPU6050 Accelerometer and Gyroscope I²C module, 
+ * - You'll have to configure the SCL, and SDA pins in the MPU6050.h header file
+ *   (and the interrupt pin, if you choose to use it)
+ * - Then follow the template provided in this file.
+ * -----------------------------------------------------------------------------
  * TODO: 
  *    - Implement the calibration routine since no sensor is perfect, and each
  *      one is slightly different than the other.
  *      (yes, talking about the exact same model)
+ * DONE:
  *    - Implement code that reads data upon interruption from the MPU6050 module.
- * --------------------------------------------------------
+ * -----------------------------------------------------------------------------
+ * Author: Radhi SGHAIER: https://github.com/Rad-hi
+ * -----------------------------------------------------------------------------
+ * Date: 12-04-2022 (12th of April, 2022)
+ * -----------------------------------------------------------------------------
+ * License: Do whatever you want with the code ...
+ *          If this was ever useful to you, and we happened to meet on 
+ *          the street, I'll appreciate a cup of dark coffee, no sugar please.
+ * -----------------------------------------------------------------------------
  */
 
 #ifndef __MY_MPU6050_H__
@@ -30,6 +37,7 @@
   /* Pins definition */
   #define I2C_SDA_PIN           18
   #define I2C_SCL_PIN           19
+  #define I2C_INTERRUPT_PIN     32
 
   /* Operation modes */
   #define MPU6050_FULL_INT      0           /* Accelerometer & Gyroscope & Temperature & Interrupt    */
@@ -65,24 +73,34 @@
   #define I2C_FREQ_HZ           400000
   #define I2C_TIMEOUT_MS        1000
 
+  /* Reading resolution */
+  #define RESOLUTION            16384.0F
+
   /* Data container */
-  typedef struct{  
-    TwoWire * i2c_handle_mpu6050;           /* Handle to the I²C port on which the imu is mounted     */
-    uint8_t addr;                           /* Slave address, 0x68 in our case                        */
+  typedef struct{
     float acc_xyz[3];
     float temp;
     float gyr_xyz[3];
+  }IMU_DATA_t;
+
+  /* Configs container */
+  typedef struct{  
+    TwoWire * i2c_handle_mpu6050;           /* Handle to the I²C port on which the imu is mounted     */
+    uint8_t addr;                           /* Slave address, 0x68 in our case                        */
   }MPU6050;
 
-  /* Functions */
-  void i2c_init_mpu6050(MPU6050 *imu, TwoWire *i2c_port, uint8_t sda_pin, uint8_t scl_pin); 
-  void i2c_setup_mpu6050(MPU6050 *imu, uint8_t mode_); 
-  void i2c_read_acc_mpu6050(MPU6050 *imu); 
-  void i2c_read_gyr_mpu6050(MPU6050 *imu);
-  void i2c_read_temp_mpu6050(MPU6050 *imu);
-  void i2c_write_byte_mpu6050(MPU6050 *imu, uint8_t reg_addr, uint8_t data_);
-  void i2c_write_read_mpu6050(MPU6050 *imu, uint8_t reg_addr, uint8_t *data_, size_t how_many);
-  void i2c_sleep_mpu6050(MPU6050 *imu); 
-  float twos_complement(uint16_t num);    /* The ACC and GYR data is returned in twos complement    */
+  /* Setup functions */
+  void i2c_init_mpu6050(MPU6050 *imu, TwoWire *i2c_port); 
+  void i2c_setup_mpu6050(uint8_t mode_); 
+
+  /* Request data instantly from the MPU6050 */
+  void i2c_read_acc_mpu6050(IMU_DATA_t * data); 
+  void i2c_read_gyr_mpu6050(IMU_DATA_t * data);
+  void i2c_read_temp_mpu6050(IMU_DATA_t * data);
+
+  /* Use only with INTERRUPTON mode, returns the latest valid data */
+  void i2c_read_with_interrupt(IMU_DATA_t * data);
+
+  void i2c_sleep_mpu6050();
   
 #endif // __MY_MPU6050_H__
